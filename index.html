@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Actividad 6-5 Wordle</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Candara, sans-serif;
+            color: #f8f8f8;
+            background-color: #0d0e12;
+        }
+        input {
+            font-family: Candara, sans-serif;
+            width: 3rem;
+            height: 3rem;
+            padding: 1px;
+            margin: 0;
+            border-radius: .3rem;
+            border: 1px solid #75757c;
+            text-align: center;
+            font-size: 3rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            background-color: #121318;
+            color: #f8f8f8;
+        }
+        form {
+            user-select: none;
+        }
+        input:focus {
+            outline: 3px solid #1dd73c;
+            -moz-outline-radius: 0;
+            transition: 100ms ease-in-out;
+        }
+        label {
+            display: inline-block;
+            height: 100%;
+            pointer-events: none;
+        }
+        button {
+            font-family: Candara, sans-serif;
+            height: 2rem;
+            padding: .3rem 1rem;
+            border-radius: .3rem;
+            border: 1px solid #75757c;
+        }
+        button:hover {
+            cursor: pointer;
+        }
+        .guess-word-cont {
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .word-to-guess {
+            visibility: hidden;
+            opacity: 0;
+            transition: .3s ease-in-out;
+            padding: .5rem 0;
+            font-weight: 800;
+            text-transform: capitalize;
+        }
+        .word-to-guess--show {
+            visibility: visible;
+            opacity: 1;
+            transition: .3s ease-in-out;
+        }
+        .title {
+            width: 100%;
+            text-align: center;
+            padding-bottom: 1rem;
+            box-sizing: border-box;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #75757c;
+        }
+        .words-cont {
+            width: fit-content;
+            margin: 0 auto;
+        }
+        .chars-row {
+            margin: .2rem auto;
+        }
+        .success {
+            background-color: #1dd73c;
+        }
+        .form {
+            height: 3.25rem;
+            transform: translateX(1rem);
+        }
+
+        .form > input {
+            user-select: none;
+        }
+
+        @keyframes animWordNotExist {
+            0% {
+                transform: translateX(12px);
+            }
+            50% {
+                transform: translateX(20px);
+            }
+            100% {
+                transform: translateX(0);
+            }
+        }
+
+        .no-exist-word {
+            animation-name: animWordNotExist;
+            animation-timing-function: linear;
+            animation-iteration-count: 3;
+            animation-duration: 100ms;
+            animation-direction: alternate;
+            animation-fill-mode: backwards;
+        }
+
+        .no-exist-word > label > input {
+            outline-width: 2px;
+            outline-style: solid;
+            outline-color: #9D0208;
+        }
+
+        .btn-submit {
+            appearance: none;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(26, 26, 26, 0.94);
+            place-content: center;
+            z-index: -1;
+        }
+
+        .modal--show {
+            display: grid;
+            z-index: 500;
+        }
+
+        .modal > h2 {
+            text-align: center;
+            text-transform: uppercase;
+            color: #f8f8f8;
+            margin: 0;
+            font-size: 2rem;
+        }
+        .modal > p {
+            text-align: center;
+            margin: 1rem 0;
+        }
+        .modal > button {
+            width: 8rem;
+            margin: .5rem auto;
+        }
+        .modal-no-exist-word-container {
+            pointer-events: none;
+        }
+        .modal-no-exist-word {
+            display: grid;
+            visibility: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            place-content: center;
+            z-index: -1;
+        }
+        .modal-no-exist-word > div {
+            width: 14rem;
+            height: 3rem;
+            display: grid;
+            place-content: center;
+            background-color: #f3f3f3;
+            border-radius: .3rem;
+            box-shadow: 0 .2rem 1rem -.5rem #202020;
+        }
+        .modal-no-exist-word > div > h2 {
+            text-align: center;
+            margin: 0;
+            font-size: .9rem;
+            color: #0d0e12;
+        }
+        @keyframes animErrorMsg {
+            0% {
+                transform: translateY(1rem);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(-1rem);
+                opacity: 1;
+            }
+        }
+        .modal-no-exist-word--show {
+            visibility: visible;
+            animation-name: animErrorMsg;
+            animation-timing-function: ease-in-out;
+            animation-duration: 1.5s;
+            animation-fill-mode: both;
+            z-index: 500;
+        }
+        @keyframes animSuccess {
+            0% {
+                transform: rotateY(180deg);
+            }
+            100% {
+                transform: rotateY(0);
+            }
+        }
+        .anim-success-char {
+            box-sizing: initial;
+            animation-name: animSuccess;
+            animation-timing-function: ease-in-out;
+            animation-iteration-count: 5;
+            animation-duration: 200ms;
+            animation-direction: alternate;
+            animation-fill-mode: forwards;
+        }
+        .text-info {
+            text-align: center;
+            opacity: .5;
+            font-size: .7rem;
+        }
+        .btn-restart-cont {
+            display: grid;
+            place-content: center;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1 class="title">Wordle</h1>
+        <div class="guess-word-cont">
+            <button id="showSolutionBtn" type="button">Ver palabra</button>
+            <span class="word-to-guess" id="word-to-guess"></span>
+        </div>
+        <div class="words-cont" id="words-cont"></div>
+        <p class="text-info">*Las palabras pueden contener acentos.</p>
+        <div class="btn-restart-cont">
+            <button type="button" id="reStart">Nueva partida</button>
+        </div>
+        <div class="modal-no-exist-word-container" id="wordNoExistCont"></div>
+        <div class="modal-empty-field-container" id="emptyFieldCont"></div>
+        <div id="gameComplete" class="modal">
+            <h2>¡Enhorabuena!</h2>
+            <p>¡Has adivinado la palabra!</p>
+            <button id="newGame" type="button">Nueva partida</button>
+        </div>
+    </main>
+    <!-- Templates -->
+    <template id="wordNoExistTemp">
+        <div id="wordNoExistMsg" class="modal-no-exist-word">
+            <div>
+                <h2>¡Esta palabra no existe! 😂</h2>
+            </div>
+        </div>
+    </template>
+    <template id="chars-row-template">
+        <div class="chars-row">
+            <form class="form" id="form">
+                <label>
+                    <input id="char1" autofocus autocomplete="off" maxlength="1" type="text">
+                </label>
+                <label>
+                    <input id="char2" autocomplete="off" maxlength="1" type="text">
+                </label>
+                <label>
+                    <input id="char3" autocomplete="off" maxlength="1" type="text">
+                </label>
+                <label>
+                    <input id="char4" autocomplete="off" maxlength="1" type="text">
+                </label>
+                <label>
+                    <input id="char5" autocomplete="off" maxlength="1" type="text">
+                </label>
+                <button class="btn-submit" id="btn-submit" type="submit"></button>
+            </form>
+        </div>
+    </template>
+    <!-- JS -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // Variables
+        let wordToGuess = "";
+        let userWord = "";
+        const chance = Array(6).fill(0);
+        const URL_RANDOM = "https://palabras-aleatorias-public-api.herokuapp.com/random";
+        const URL_FIND_MATCH = "https://palabras-aleatorias-public-api.herokuapp.com/palabras-aleatorias?Word=";
+        const htmlWordToGuess = document.querySelector('#word-to-guess');
+        const showSolutionBtn = document.querySelector('#showSolutionBtn');
+        const newGameBtn = document.querySelector('#newGame');
+        const gameComplete = document.querySelector('#gameComplete');
+        const reStart = document.querySelector('#reStart');
+        const pattern = new RegExp("^[A-Za-zÑñÁáÉéÍíÓóÚúÜü]$");
+
+        // Template
+        const templateRow = document.querySelector('template#chars-row-template').content.firstElementChild;
+        const wordNoExistTemp = document.querySelector('template#wordNoExistTemp').content.firstElementChild;
+        const targetRow = document.querySelector('#words-cont');
+        const targetWordNoExist = document.querySelector('#wordNoExistCont');
+
+        function checkRegExpPattern(pattern, model) {
+            return pattern.test(model);
+        }
+
+        // Desabilita la tecla 'Tab'
+        document.documentElement.addEventListener('keydown', (e) => {
+           if (e.key === 'Tab') e.preventDefault();
+        });
+
+        // Comprueba si las palabras son iguales
+        function areEquals (word1, word2) {
+            return word1.trim().toLowerCase() === word2.trim().toLowerCase();
+        }
+
+        /***
+         * Obtiene una palabra a adivinar random
+         */
+       async function getNewWordToGuess() {
+            await fetch(URL_RANDOM)
+                .then(res => res.json())
+                .then(data => {
+                    data.body.Word.length === 5 ? wordToGuess = data.body.Word : getNewWordToGuess();
+                    htmlWordToGuess.textContent = wordToGuess;
+                })
+                .catch(error => console.log(error));
+        }
+
+        /***
+         *
+         * @param currentFormRow
+         * @param userChar
+         * @param iUsersChar
+         * @param wordToGuessSplitted
+         */
+        function getPositionChar(currentFormRow, userChar, iUsersChar, wordToGuessSplitted) {
+
+            wordToGuessSplitted.forEach((wordToGuessChar, iWordToGuessChar) => {
+                if (wordToGuessChar === userChar) {
+                       if (iWordToGuessChar === iUsersChar) {
+                           const idDomChar = "char" + (parseInt(iUsersChar) + 1);
+                           const targetChar = currentFormRow.querySelector(`#${idDomChar}`);
+                           targetChar.style.backgroundColor = "#1dd73c";
+                       } else {
+                           const idDomChar = "char" + (parseInt(iUsersChar) + 1);
+                           const targetChar = currentFormRow.querySelector(`#${idDomChar}`);
+                           targetChar.style.backgroundColor = "#e4ff1a";
+                       }
+                }
+            });
+
+        }
+
+        /***
+         * Función que comienza una nueva partida
+         */
+        function startNewGame() {
+            getNewWordToGuess();
+            // Ejecuta la función que renderiza los intentos
+            renderRowChar(chance, templateRow, targetRow);
+            gameComplete.classList.remove('modal--show');
+        }
+
+        /***
+         *  Si la palabra del usuario existe y es valida, la compara con la palabra a adivinar
+         */
+        function letsPlay(currentFormRow) {
+
+            // Convierte separa todos los caracteres de cada palabra y los almacena en un array
+            const userWordSplitted = userWord.split('');
+            const wordToGuessSplitted = wordToGuess.split('');
+
+            if (!areEquals(userWord, wordToGuess)) {
+
+                userWordSplitted.map((userChar, iUsersChar) => {
+                    if (wordToGuess.includes(userChar)) {
+                        getPositionChar(currentFormRow, userChar, iUsersChar, wordToGuessSplitted);
+                    } else {
+                        const idDomChar = "char" + (parseInt(iUsersChar) + 1);
+                        const targetChar = currentFormRow.querySelector(`#${idDomChar}`);
+                        targetChar.style.backgroundColor = "#595959";
+                    }
+                });
+
+            } else {
+                // Si las palabras son iguales, termina el juego
+
+                // Cambia el color de cada caracter a verde
+                currentFormRow.querySelectorAll('input').forEach(char => {
+                    //Añade una clase para cambiar el color del fondo y para mostrar una animación
+                    return char.classList.add('success', 'anim-success-char');
+                });
+                // Una vez finalizada la partida, remueve el evento 'submit' para validar la palabra
+                currentFormRow.removeEventListener('submit', checkWord);
+
+                // Después de 1s muestra un mensaje de enhorabuena
+                setTimeout(() => {
+                    gameComplete.classList.add('modal--show');
+                    newGameBtn.addEventListener('click', startNewGame);
+                }, 1000);
+
+            }
+        }
+
+        /***
+         * Función que renderiza el mensaje de error
+         * @param wordNoExistTemp
+         * @param targetWordNoExist
+         */
+        function showWordNoExistMsg(wordNoExistTemp, targetWordNoExist) {
+
+            const errorMsgTemplate = wordNoExistTemp.cloneNode(true);
+            targetWordNoExist.appendChild(errorMsgTemplate);
+
+            targetWordNoExist.firstElementChild.classList.add('modal-no-exist-word--show');
+
+            // Borra el elemento después de 2 segundos
+            setTimeout(() => {
+                targetWordNoExist.querySelector('#wordNoExistMsg').remove();
+            }, 2000);
+        }
+
+        /***
+         * Función que maneja el error si la palabra no existe
+         *
+         */
+        function errorWordNotExist(currentFormRow) {
+
+            showWordNoExistMsg(wordNoExistTemp, targetWordNoExist);
+
+            currentFormRow.classList.add('no-exist-word');
+
+            setTimeout(() => {
+                currentFormRow.classList.remove('no-exist-word');
+            }, 2000);
+
+            const formLabelsNode = currentFormRow.children;
+
+            const formLabels = [...formLabelsNode];
+
+            // Elimino el último elemento que es el botón para envíar el formulario
+            formLabels.pop();
+
+            setTimeout(() => {
+                formLabels.forEach(label => {
+                    return label.firstElementChild.value = "";
+                });
+            }, 500);
+
+            formLabels[0].focus();
+
+        }
+
+        /***
+         * Función que averigua si existe la palabra introducida a través de la solicitud a una API
+         */
+        async function userWordExist(currentFormRow) {
+
+            userWord = userWord.toLowerCase();
+
+            // Se conecta a la API para buscar la palabra que insertó el usuario
+            await fetch(URL_FIND_MATCH + userWord)
+                .then(res => res.json())
+                .then(data => {
+
+                    // Palabra devuelta de la solicitúd
+                    const word = data.body[0].Word;
+
+                    // Si coincide, si la palabra existe
+                    if (areEquals(userWord, word)) {
+                        // Comprueba la palabra a adivinar con la palabra del usuario
+                        letsPlay(currentFormRow);
+                        // Si todos los campos están llenos, remueve el evento click para poner el foco en los caracteres
+                        currentFormRow.removeEventListener('click', focusOnEmptyEl);
+                        // Si todos los campos están llenos, remueve el evento de escucha al presionar una tecla al botón de submit
+                        currentFormRow.querySelector('#btn-submit').removeEventListener('keydown', prevField);
+                    }
+
+                })
+                .catch(error => {
+                    // Si la palabra no existe muestra el error en la consola
+                    console.error(error);
+                    // Ejecuta la función que muestra un mensaje de error
+                    errorWordNotExist(currentFormRow);
+                });
+
+            // Al terminar borra la palabra
+            userWord = "";
+        }
+
+        /***
+         * Función que compara la palabra del usuario con la palabra a adivinar
+         */
+        function checkWord(e) {
+
+            e.preventDefault();
+
+            // Captura el formulario actual
+            const currentFormRow = e.target;
+
+            // Captura todos los elementos hijos del <form> actual
+            // Devuelve un HTMLCollection
+            const getFormChildren = e.target.children;
+
+            // Añade a un nuevo objeto todos los hijos para que puedan ser iterados
+            const formLabels = [...getFormChildren];
+
+            // Concatena cada caracter en una única palabra
+            formLabels.forEach(label => {
+                if (label.id !== 'btn-submit') {
+                    return userWord = userWord + label.firstElementChild.value;
+                }
+            });
+
+            // Devuelve 'true' si encuentra al menos un campo vacío
+            const areEmptyFields = formLabels.some(label => {
+                if (label.id !== 'btn-submit') {
+                    return label.firstElementChild.value === "";
+                }
+            });
+
+            // Si no se han insertado todos los caracteres, vacía la palabra del usuario
+            if (areEmptyFields) {
+                userWord = "";
+            } else {
+                userWordExist(currentFormRow);
+            }
+
+        }
+
+        /***
+         * Función que al pulsar la tecla para borrar, corre los inputs
+         * @param e
+         */
+        function prevField(e) {
+
+            // Captura el ID del elemento <input>
+            const targetId = e.target.id
+
+            // Si se presiona la tecla para borrar "backspace", cambia el foco al anterior elemento
+            switch (e.code === "Backspace") {
+                case targetId === "char1":
+                    e.target.value = "";
+                    break;
+                case targetId === "char2":
+                    e.target.form.querySelector('#char1').focus();
+                    break;
+                case targetId === "char3":
+                    e.target.form.querySelector('#char2').focus();
+                    break;
+                case targetId === "char4":
+                    e.target.form.querySelector('#char3').focus();
+                    break;
+                case targetId === "char5":
+                    e.target.value = "";
+                    e.target.form.querySelector('#char4').focus();
+                    break;
+                case targetId === "btn-submit":
+                    e.target.form.querySelector('#char5').focus();
+                    break;
+            }
+        }
+
+        /***
+         * Función que cambia el foco al siguiente elemento si el campo de texto está lleno,
+         * @param e
+         */
+        function nextField(e) {
+            switch (e.target.id) { // Averigua según el ID del campo <input>
+                case "char1":
+                    if (checkRegExpPattern(pattern, e.target.value)) {
+                        e.target.form.querySelector('#char2').focus();
+                    } else {
+                        e.target.value = "";
+                    }
+                    break;
+                case "char2":
+                    if (checkRegExpPattern(pattern, e.target.value)) {
+                        e.target.form.querySelector('#char3').focus();
+                    } else {
+                        e.target.value = "";
+                    }
+                    break;
+                case "char3":
+                    if (checkRegExpPattern(pattern, e.target.value)) {
+                        e.target.form.querySelector('#char4').focus();
+                    } else {
+                        e.target.value = "";
+                    }
+                    break;
+                case "char4":
+                    if (checkRegExpPattern(pattern, e.target.value)) {
+                        e.target.form.querySelector('#char5').focus();
+                    } else {
+                        e.target.value = "";
+                    }
+                    break;
+                case "char5":
+                    if (checkRegExpPattern(pattern, e.target.value)) {
+                        e.target.form.querySelector('#btn-submit').focus();
+                    } else {
+                        e.target.value = "";
+                    }
+                    break;
+            }
+        }
+
+        /***
+         * Función que cambia el foco al primer elemento que esté vacío de cada linea de las palabras
+         * @param e Evento click
+         */
+        function focusOnEmptyEl(e) {
+
+            // Captura todos los los <input> de la fila
+            const getAllInputEl = e.target.querySelectorAll('input');
+
+            // false si no ha encontrado al menos un elemento vacío
+            let firstEmptyElFounded = false;
+
+            // Itera todos los elementos y si encuentra uno vacío, le pone el foco.
+            getAllInputEl.forEach(inputEl => {
+                if (firstEmptyElFounded === false && inputEl.value === "") {
+                    firstEmptyElFounded = true;
+                    return inputEl.focus();
+                }
+
+                // Si ningún elemento está vacío, pone el foco en el último elemento
+                if (inputEl.value !== "") {
+                    return inputEl.focus();
+                }
+            });
+        }
+
+        /***
+         * Renderiza las lineas de los caracteres
+         */
+        function renderRowChar(chanceYouHave, templateRow, targetRow) {
+
+            targetRow.textContent = "";
+
+            chanceYouHave.forEach(() => {
+
+                const myRowTemplate = templateRow.cloneNode(true);
+
+                const allInputs = myRowTemplate.querySelectorAll('input');
+
+                // Añade los eventos de escucha a cada <input>
+                allInputs.forEach(input => {
+                    input.addEventListener('keyup', nextField);
+                    input.addEventListener('keydown', prevField);
+                });
+
+                // Añade un evento de escucha al presionar una tecla si el botón tiene el foco
+                myRowTemplate.querySelector('#btn-submit').addEventListener('keydown', prevField);
+
+                // Captura el formulario en el DOM (todos los <inputs> con sus <label>
+                const formRow = myRowTemplate.querySelector('#form');
+
+                // Evento Submit para comprobar la palabra
+                formRow.addEventListener('submit', checkWord);
+                // Evento click y foco en la primera celda vacía de la linea
+                formRow.addEventListener('click', focusOnEmptyEl);
+
+                // Desabilita el menú del click derecho del ratón
+                targetRow.addEventListener('contextmenu', (e) => { e.preventDefault() });
+
+                targetRow.appendChild(myRowTemplate);
+            });
+
+        }
+
+        // Función que reinicia la partida con una nueva palabra
+        function reStartGame() {
+
+            getNewWordToGuess();
+            // Ejecuta la función que renderiza los intentos
+            renderRowChar(chance, templateRow, targetRow);
+
+        }
+
+        // Función que al apretar un botón muestra la palabra a adivinar
+        function showSolution() {
+            htmlWordToGuess.classList.add('word-to-guess--show');
+            setTimeout(() => {
+                htmlWordToGuess.classList.remove('word-to-guess--show');
+            }, 2000);
+        }
+
+        // Evento de escucha en el botón para mostrar la solución
+        showSolutionBtn.addEventListener('click', showSolution);
+
+        // Evento de escucha en el botón para comenzar una nueva partida
+        reStart.addEventListener('click', reStartGame);
+
+        // Ejecuta la funcion que obtiene una palabra aleatoria
+        getNewWordToGuess();
+
+        // Ejecuta la función que renderiza los intentos
+        renderRowChar(chance, templateRow, targetRow);
+
+    });
+</script>
+</body>
+</html>
